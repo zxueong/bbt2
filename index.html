@@ -101,10 +101,10 @@
 <body>
 
 <div class="game-container">
-    <audio id="bgm-music" loop src="https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg"></audio>
-    <audio id="se-click" src="https://actions.google.com/sounds/v1/foley/coins_drop_single.ogg"></audio>
-    <audio id="se-upgrade" src="https://actions.google.com/sounds/v1/transmissions/climb_down.ogg"></audio>
-    <audio id="se-alert" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"></audio>
+    <audio id="bgm-music" loop src="https://upload.wikimedia.org/wikipedia/commons/4/40/Tchaikovsky_-_Twelve_Pieces_for_Piano%2C_Op._40_-_No._2._Chanson_triste.ogg"></audio>
+    <audio id="se-click" src="https://upload.wikimedia.org/wikipedia/commons/4/47/Coin_drop.wav"></audio>
+    <audio id="se-upgrade" src="https://upload.wikimedia.org/wikipedia/commons/9/91/Short_whip.wav"></audio>
+    <audio id="se-alert" src="https://upload.wikimedia.org/wikipedia/commons/5/55/Buzzer.wav"></audio>
 
     <div class="pixel-canvas" id="canvas-bg">
         <div class="canvas-title" id="canvas-title-text">⚙️ 正在校正頂級茶葉...</div>
@@ -163,16 +163,14 @@
 </div>
 
 <div class="universal-overlay" id="account-overlay-box">
-    <div class="popup-modal">
-        <h3>👤 總部帳號對接管理系統</h3>
-        <div class="modal-input-group">
-            <label>店長註冊帳號</label>
-            <input type="text" id="auth-user" placeholder="輸入英數帳號">
-        </div>
-        <div class="modal-input-group">
-            <label>資料防盜密碼</label>
-            <input type="password" id="auth-pass" placeholder="輸入登入密碼">
-        </div>
+    <div class="modal-input-group">
+    <label for="auth-user">店長註冊帳號</label>
+    <input type="text" id="auth-user" placeholder="輸入英數帳號">
+</div>
+<div class="modal-input-group">
+    <label for="auth-pass">資料防盜密碼</label>
+    <input type="password" id="auth-pass" placeholder="輸入登入密碼">
+</div>
         <div class="modal-btn-row">
             <button class="modal-prime-btn" onclick="handleAuth('login')">安全登入</button>
             <button class="modal-sec-btn" onclick="handleAuth('register')" style="background:#6c757d;">建立新帳號</button>
