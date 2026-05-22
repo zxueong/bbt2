@@ -300,9 +300,9 @@
     };
 
     const citiesConfig = {
-        tapei: { name: "台北總店", cost: 0, desc: "【天龍高租金】高通膨基礎關卡，適合奠定黑心基業。", bg: "#2b1f1d" },
+        taipei: { name: "台北總店", cost: 0, desc: "【天龍高租金】高通膨基礎關卡，適合奠定黑心基業。", bg: "#2b1f1d" },
         hsinchu: { name: "新竹分店", cost: 250000, desc: "【九降風加持 💨】狂風灌進店內！GPS 永久增加 20%。", bg: "#1a2e26" },
-        taichung: { name: "台中分店", cost: 2500000, desc: "【消波塊恐嚇流 🔫】點擊 5% 機率搶奪同業 50 倍慶記暴擊金！", bg: "#25333a" },
+        taichung: { name: "台中分店", cost: 2500000, desc: "【消波塊恐嚇流 🔫】點擊 5% 機率搶奪同業 50倍慶記暴擊金！", bg: "#25333a" },
         tainan: { name: "台南分店", cost: 25000000, desc: "【全糖螞蟻重災區 🐜】甜度爆表！該店所有被動營收直接翻 2 倍！", bg: "#4a1930" },
         hualien: { name: "花蓮分店", cost: 150000000, desc: "【大自然免費搖 🌋】點擊收益 +50%，但偶爾會震歪停工。", bg: "#222d1b" },
         kaohsiung: { name: "高雄分店", cost: 1500000000, desc: "【暖心烈日 ☀️】大魔王關！全台灣總收入原地直接暴增 3倍！", bg: "#4e2110" }
@@ -450,61 +450,86 @@
     }
 
     // ==========================================
-    // 🛠️ 核心修正：加入超強防卡死、降級離線遊玩機制的雲端 API 處理核心
+    // 🌟 新增修正點：補上被漏掉的對接雲端 API handleAuth 函式
     // ==========================================
-    async function callCloudAPI(action, extraData = {}) {
-        let url = `${GAS_API_URL}?action=${action}&username=${encodeURIComponent(gameState.username)}&password=${encodeURIComponent(gameState.password)}`;
+    function handleAuth(mode) {
+        const user = document.getElementById("auth-user").value.trim();
+        const pass = document.getElementById("auth-pass").value.trim();
         
-        if (action === "save") {
-            url += `&saveData=${encodeURIComponent(JSON.stringify(gameState))}`;
-        } else if (action === "attack") {
-            url += `&target=${encodeURIComponent(extraData.target || '')}`;
+        if (!user || !pass) {
+            alert("帳號密碼不能為空，請輸入完整！");
+            return;
         }
-
-        try {
-            const response = await fetch(url, { 
-                method: 'GET',
-                mode: 'cors'
-            });
-            if (!response.ok) throw new Error("HTTP 異常 " + response.status);
-            const data = await response.json();
-            return data;
-        } catch (err) {
-            console.error("【雲端同步離線守護者】:", err);
-            // 當連線失敗、被 CORS 擋住時，回傳相容資料結構，確保前端程式不崩潰中斷
-            return { 
-                success: false, 
-                msg: "📡 目前連線不穩，總部自動切換至本機沙盒遊玩模式！", 
-                saveData: gameState,
-                leaderboard: globalLeaderboard
-            };
-        }
+        
+        showLog(mode === "login" ? "正在連線登入總部..." : "正在向總部註冊新帳號...");
+        
+        // 封裝發送給 Google Apps Script API 的資料
+        const payload = {
+            action: mode,
+            username: user,
+            password: pass,
+            data: JSON.stringify(gameState) // 如果是登入或註冊，順便帶入當前進度
+        };
+        
+        // 使用 fetch 發送非同步請求到你的雲端
+        fetch(GAS_API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === "success") {
+                alert(res.message || "認證成功！");
+                gameState.username = user;
+                gameState.password = pass;
+                
+                // 如果是登入，就把雲端的遊戲進度蓋回本地
+                if (mode === "login" && res.gameData) {
+                    try {
+                        gameState = JSON.parse(res.gameData);
+                    } catch(e) {
+                        console.error("雲端存檔解析錯誤", e);
+                    }
+                }
+                
+                // 更新登入狀態 UI
+                document.getElementById("btn-account-text").innerText = "身分：" + user;
+                document.getElementById("lbl-status-user").innerText = user;
+                document.getElementById("logged-status-lbl").style.display = "block";
+                document.getElementById("modal-logout-zone").style.display = "block";
+                
+                toggleAccountModal(false);
+                updatePixelGraphics();
+                updateUI();
+                showLog(`歡迎回來！大亨【${user}】正在聽候差遣`);
+            } else {
+                alert("總部回報錯誤: " + (res.message || "未知原因失敗"));
+                showLog("認證失敗，請檢查帳密設定。");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("連線到總部伺服器失敗！請確認是否使用 Live Server 網頁伺服器開啟。");
+            showLog("雲端連線失敗。");
+        });
     }
 
-    // 連結搖一杯點擊事件
-    elClickBtn.addEventListener('click', function(e) {
-        playAudio("se-click");
-        let gain = gameState.clickPower;
-        gameState.money += gain;
-        gameState.totalEarned += gain;
-        updateUI();
-        
-        // 畫面上冒出愛心特效
-        let heart = document.createElement('div');
-        heart.className = 'heart';
-        heart.innerText = '🧋';
-        heart.style.left = (e.clientX || 200) + 'px';
-        heart.style.top = (e.clientY || 200) + 'px';
-        document.body.appendChild(heart);
-        setTimeout(() => heart.remove(), 1200);
-    });
-
-    // 初始化基本 UI 狀態
-    window.addEventListener('DOMContentLoaded', () => {
-        updatePixelGraphics();
-        updateUI();
-        switchTab('upgrade');
-    });
+    // 補齊對應的登出功能，方便切換帳號
+    function logout() {
+        gameState.username = "";
+        gameState.password = "";
+        document.getElementById("btn-account-text").innerText = "管理我的飲料帝國帳號";
+        document.getElementById("lbl-status-user").innerText = "遊客";
+        document.getElementById("logged-status-lbl").style.display = "none";
+        document.getElementById("modal-logout-zone").style.display = "none";
+        document.getElementById("auth-user").value = "";
+        document.getElementById("auth-pass").value = "";
+        alert("已成功登出店長身分！");
+        toggleAccountModal(false);
+        showLog("目前身分為匿名遊客");
+    }
 </script>
 </body>
 </html>
