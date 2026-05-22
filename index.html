@@ -302,10 +302,10 @@
     const citiesConfig = {
         taipei: { name: "台北總店", cost: 0, desc: "【天龍高租金】高通膨基礎關卡，適合奠定黑心基業。", bg: "#2b1f1d" },
         hsinchu: { name: "新竹分店", cost: 250000, desc: "【九降風加持 💨】狂風灌進店內！GPS 永久增加 20%。", bg: "#1a2e26" },
-        taichung: { name: "台中分店", cost: 2500000, desc: "【消波塊恐嚇流 🔫】點擊 5% 機率搶奪同業 50倍慶記暴擊金！", bg: "#25333a" },
+        taichung: { name: "台中分店", cost: 2500000, desc: "【消波塊恐嚇流 🔫】點擊 5% 機率搶奪同業 50 倍慶記暴擊金！", bg: "#25333a" },
         tainan: { name: "台南分店", cost: 25000000, desc: "【全糖螞蟻重災區 🐜】甜度爆表！該店所有被動營收直接翻 2 倍！", bg: "#4a1930" },
         hualien: { name: "花蓮分店", cost: 150000000, desc: "【大自然免費搖 🌋】點擊收益 +50%，但偶爾會震歪停工。", bg: "#222d1b" },
-        kaohsiung: { name: "高雄分店", cost: 1500000000, desc: "【暖心烈日 ☀️】大魔王關！全台灣總收入原地直接暴增 3倍！", bg: "#4e2110" }
+        kaohsiung: { name: "高雄分店", cost: 1500000000, desc: "【暖心烈日 ☀️】大魔王關！全台灣總收入原地直接暴增 3 倍！", bg: "#4e2110" }
     };
 
     let currentTab = "upgrade"; let activeEvent = null; let eventClicks = 0; let eventTimeLeft = 10;
@@ -419,7 +419,7 @@
         document.getElementById('tab-upgrade-btn').className = tab === 'upgrade' ? 'tab-btn active' : 'tab-btn';
         document.getElementById('tab-map-btn').className = tab === 'map' ? 'tab-btn active' : 'tab-btn';
         document.getElementById('tab-rank-btn').className = tab === 'rank' ? 'tab-btn active' : 'tab-btn';
-        if (typeof renderTabContent === "function") renderTabContent();
+        renderTabContent();
     }
 
     function buyUpgrade(type) {
@@ -446,90 +446,330 @@
         } else if(type === 'south' && gameState.money >= Math.pow(6, gameState.southLevel) * 150000) {
             gameState.money -= Math.pow(6, gameState.southLevel) * 150000; gameState.southLevel++;
         } else { alert("沒錢還敢買升級啊？店長！"); return; }
-        updatePixelGraphics(); updateUI(); if (typeof renderTabContent === "function") renderTabContent();
+        updatePixelGraphics(); updateUI(); renderTabContent();
     }
 
     // ==========================================
-    // 🌟 新增修正點：補上被漏掉的對接雲端 API handleAuth 函式
+    // 🧋 核心功能實作：手動點擊搖飲料
+    // ==========================================
+    document.getElementById('click-btn').addEventListener('click', function(e) {
+        playAudio("se-click");
+        let power = gameState.clickPower;
+        
+        // 台中分店暴擊特效 (消波塊慶記暴擊)
+        if(gameState.currentCity === "taichung" && Math.random() < 0.05) {
+            power *= 50;
+            showLog("🔫 慶記暴擊！搶奪同業獲得 50 倍金幣！");
+            elFlashEffect.classList.add('flash-active');
+            setTimeout(() => elFlashEffect.classList.remove('flash-active'), 250);
+        }
+        
+        // 花蓮分店點擊加成
+        if(gameState.currentCity === "hualien") {
+            power *= 1.5;
+        }
+
+        // 隨機觸發突發事件點擊次數
+        if(activeEvent === "click_storm") {
+            eventClicks++;
+        }
+
+        gameState.money += power;
+        gameState.totalEarned += power;
+        updateUI();
+
+        // 噴出愛心動畫
+        let heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.innerText = '🧋';
+        heart.style.left = (Math.random() * 60 + 20) + '%';
+        heart.style.top = '100px';
+        elFxLayer.appendChild(heart);
+        setTimeout(() => heart.remove(), 1200);
+    });
+
+    // ==========================================
+    // 🏪 分頁內容渲染核心
+    // ==========================================
+    function renderTabContent() {
+        elScrollArea.innerHTML = "";
+        if (currentTab === "upgrade") {
+            let uData = [
+                { id: 'staff', name: '壓榨實習生', desc: `基本員工。目前: ${gameState.staffCount}員`, cost: gameState.staffCount * 1.5 + 15 },
+                { id: 'mint', name: '薄荷腦香精', desc: `研發化工薄荷，被動產能翻倍。目前: Lv ${gameState.mintLevel}`, cost: Math.pow(2.5, gameState.mintLevel) * 80 },
+                { id: 'recipe', name: '黑心糖精比例', desc: `大幅提升手動點擊威力。目前: Lv ${gameState.recipeLevel}`, cost: Math.pow(2, gameState.recipeLevel) * 50 },
+                { id: 'delivery', name: '超時外送車隊', desc: `派員工瘋狂違規外送 (+5 GPS)。目前: ${gameState.deliveryCount}隊`, cost: gameState.deliveryCount * 150 + 500 },
+                { id: 'machine', name: '工業級自動搖搖機', desc: `科技化高產能生財器具 (+15 GPS)。目前: ${gameState.machineCount}台`, cost: gameState.machineCount * 400 + 1200 },
+                { id: 'chicken', name: '買珍奶送毒雞排', desc: `台灣人最愛邪惡套餐 (+35 GPS)。目前: ${gameState.chickenCount}攤`, cost: gameState.chickenCount * 1200 + 3500 },
+                { id: 'manager', name: '黑心美女經理', desc: `幫你大聲訓斥兼洗腦員工 (+120 GPS)。目前: ${gameState.managerCount}位`, cost: gameState.managerCount * 4500 + 12000 },
+                { id: 'wall', name: '防查緝防火牆', desc: `降低被記者拍蒼蠅機率。目前: Lv ${gameState.wallLevel}`, cost: Math.pow(4, gameState.wallLevel) * 15000 }
+            ];
+
+            elScrollArea.innerHTML = `<div class="panel-title">🏪 飲料店科技與勞動力升級</div>`;
+            uData.forEach(item => {
+                let div = document.createElement('div');
+                div.className = "upgrade-item";
+                div.innerHTML = `
+                    <div class="upgrade-info">
+                        <h4>${item.name}</h4>
+                        <p>${item.desc}</p>
+                    </div>
+                    <button class="upgrade-btn" onclick="buyUpgrade('${item.id}')">投資 $${formatMoney(item.cost)}</button>
+                `;
+                elScrollArea.appendChild(div);
+            });
+        } 
+        else if (currentTab === "map") {
+            elScrollArea.innerHTML = `<div class="panel-title">🗺️ 插旗全台灣（跨縣市拓店）</div><div class="map-grid"></div>`;
+            let grid = elScrollArea.querySelector('.map-grid');
+            
+            Object.keys(citiesConfig).forEach(key => {
+                let city = citiesConfig[key];
+                let isUnlocked = gameState.unlockedCities[key] === 1;
+                let isActive = gameState.currentCity === key;
+                
+                let card = document.createElement('div');
+                card.className = `city-card ${isUnlocked ? '' : 'locked'} ${isActive ? 'active' : ''}`;
+                
+                if (!isUnlocked) {
+                    card.innerHTML = `
+                        <h5>🔒 ${city.name}</h5>
+                        <p>${city.desc}</p>
+                        <button class="upgrade-btn" style="width:100%;" onclick="unlockCity('${key}', ${city.cost})">解鎖 $${formatMoney(city.cost)}</button>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <h5>${city.name}</h5>
+                        <p>${city.desc}</p>
+                        <span class="status-tag">${isActive ? '營運中' : '點擊視察分店'}</span>
+                    `;
+                    card.onclick = function(e) {
+                        if(e.target.tagName !== 'BUTTON') {
+                            gameState.currentCity = key;
+                            showLog(`切換到【${city.name}】視察，背景音效同步切換！`);
+                            updatePixelGraphics();
+                            updateUI();
+                            renderTabContent();
+                        }
+                    };
+                }
+                grid.appendChild(card);
+            });
+        } 
+        else if (currentTab === "rank") {
+            elScrollArea.innerHTML = `
+                <div class="panel-title">🏆 全服飲料富豪排行榜 (即時對接)</div>
+                <table class="rank-table">
+                    <thead><tr><th>名次</th><th>大亨名稱</th><th>總資產</th><th>行動</th></tr></thead>
+                    <tbody id="rank-rows"><tr><td colspan="4" style="text-align:center;">正在讀取總部風雲榜...</td></tr></tbody>
+                </table>
+            `;
+            fetchLeaderboard();
+        }
+    }
+
+    function unlockCity(key, cost) {
+        if (gameState.money >= cost) {
+            gameState.money -= cost;
+            gameState.unlockedCities[key] = 1;
+            gameState.currentCity = key;
+            playAudio("se-upgrade");
+            showLog(`恭喜！成功進軍插旗【${citiesConfig[key].name}】！`);
+            updatePixelGraphics();
+            updateUI();
+            renderTabContent();
+        } else {
+            alert("分店土地與權利金不足！再多搖幾杯奶茶吧！");
+        }
+    }
+
+    // ==========================================
+    // 🏆 排行榜與雲端同步功能
+    // ==========================================
+    function fetchLeaderboard() {
+        fetch(`${GAS_API_URL}?action=getLeaderboard`)
+        .then(res => res.json())
+        .then(data => {
+            let tbody = document.getElementById('rank-rows');
+            if(!tbody) return;
+            tbody.innerHTML = "";
+            // 假資料打底 + 雲端混入
+            let list = data.status === "success" ? data.data : [
+                {username: "黑心五十嵐", money: 500000000},
+                {username: "清心福全糖精王", money: 120000000},
+                {username: "茶湯會總裁", money: 45000000}
+            ];
+            list.sort((a,b) => b.money - a.money);
+            list.forEach((p, idx) => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${idx+1}</td>
+                    <td>${p.username || '神秘茶王'}</td>
+                    <td>$${formatMoney(p.money)}</td>
+                    <td><button class="rank-hit-btn" onclick="attackPlayer('${p.username}')">叫記者 🦟</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }).catch(() => {
+            let tbody = document.getElementById('rank-rows');
+            if(tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">無法連線雲端富豪榜。</td></tr>`;
+        });
+    }
+
+    function attackPlayer(target) {
+        if(gameState.money < 50000) { alert("名聲不夠，雇不起記者！(至少需要 $50,000)"); return; }
+        gameState.money -= 50000;
+        updateUI();
+        alert(`💥 已成功花費 $50,000 密報記者去檢查【${target}】的廚房蒼蠅！`);
+    }
+
+    // ==========================================
+    // ⏱️ 核心主計時循環 (每一秒)
+    // ==========================================
+    setInterval(function() {
+        // 花蓮地震隨機停工檢驗
+        if(gameState.currentCity === "hualien" && Math.random() < 0.08 && !hualienStopMachine) {
+            hualienStopMachine = true;
+            showLog("🌋 花蓮發生大自然免費搖地震！機器停工 4 秒！");
+            updatePixelGraphics();
+            setTimeout(() => { hualienStopMachine = false; updatePixelGraphics(); }, 4000);
+        }
+
+        // 被動產金
+        let gps = calculateGPS();
+        gameState.money += gps / 10; // 每 100ms 產出 1/10
+        gameState.totalEarned += gps / 10;
+        updateUI();
+
+        // 隨機同行惡性競爭攻擊 (5%機率，有裝牆機率降低)
+        if(Math.random() < (0.01 / (gameState.wallLevel + 1)) && !gameState.underAttack && gameState.money > 10000) {
+            gameState.underAttack = true;
+            playAudio("se-alert");
+            showLog("🚨 完蛋！同行叫記者來拍我們店裡的蒼蠅了！");
+            updatePixelGraphics();
+            updateUI();
+        }
+
+        // 隨機突發小事件 (每 30 秒 15% 機率)
+        if(Math.random() < 0.05 && !activeEvent) {
+            triggerRandomEvent();
+        }
+    }, 1000);
+
+    function executeChickenClean() {
+        let cost = Math.max(gameState.money * 0.05, 500);
+        if(gameState.money >= cost) {
+            gameState.money -= cost;
+            gameState.underAttack = false;
+            showLog("🧧 免費雞排發威！鄉民瘋狂洗白，商譽恢復 100%！");
+            updatePixelGraphics();
+            updateUI();
+        } else { alert("慘了，黑心賺得不夠多，連雞排都發不起！"); }
+    }
+
+    function triggerRandomEvent() {
+        let evs = [
+            {type: "click_storm", title: "⚡ 閃電全台限時大停電", desc: "機器全部罷工！但手動搖杯產能瞬間暴增 10 倍！", btn: "用手瘋狂搖！"},
+            {type: "labor", title: "⚖️ 勞檢大隊無預警突襲", desc: "實習生全員逃跑躲藏，期間被動 GPS 歸零！", btn: "塞紅包請委員喝茶"}
+        ];
+        activeEvent = evs[Math.floor(Math.random() * evs.length)];
+        eventTimeLeft = 10;
+        eventClicks = 0;
+        
+        elEventTitle.innerText = activeEvent.title;
+        elEventDesc.innerText = activeEvent.desc;
+        elEventActionBtn.innerText = activeEvent.btn;
+        elEventBox.style.display = "flex";
+        playAudio("se-alert");
+
+        eventTimerId = setInterval(() => {
+            eventTimeLeft--;
+            document.getElementById('event-timer').innerText = eventTimeLeft;
+            if(eventTimeLeft <= 0) { resolveEvent(); }
+        }, 1000);
+    }
+
+    function handleEventClick() {
+        if(activeEvent.type === "click_storm") {
+            gameState.money += gameState.clickPower * 10;
+            updateUI();
+        } else if(activeEvent.type === "labor") {
+            if(gameState.money >= 5000) {
+                gameState.money -= 5000;
+                updateUI();
+                showLog("委員會心一笑，勞檢順利過關！");
+                resolveEvent();
+            } else { alert("手頭現金不夠塞紅包！"); }
+        }
+    }
+
+    function resolveEvent() {
+        clearInterval(eventTimerId);
+        elEventBox.style.display = "none";
+        activeEvent = null;
+        updatePixelGraphics();
+        updateUI();
+    }
+
+    // ==========================================
+    // 👤 雲端對接與本地帳號管理實作
     // ==========================================
     function handleAuth(mode) {
         const user = document.getElementById("auth-user").value.trim();
         const pass = document.getElementById("auth-pass").value.trim();
+        if (!user || !pass) { alert("帳密不可為空！"); return; }
         
-        if (!user || !pass) {
-            alert("帳號密碼不能為空，請輸入完整！");
-            return;
-        }
-        
-        showLog(mode === "login" ? "正在連線登入總部..." : "正在向總部註冊新帳號...");
-        
-        // 封裝發送給 Google Apps Script API 的資料
-        const payload = {
-            action: mode,
-            username: user,
-            password: pass,
-            data: JSON.stringify(gameState) // 如果是登入或註冊，順便帶入當前進度
-        };
-        
-        // 使用 fetch 發送非同步請求到你的雲端
+        showLog("正在安全同步至總部核心...");
         fetch(GAS_API_URL, {
             method: "POST",
             mode: "cors",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ action: mode, username: user, password: pass, data: JSON.stringify(gameState) })
         })
         .then(res => res.json())
         .then(res => {
             if (res.status === "success") {
-                alert(res.message || "認證成功！");
-                gameState.username = user;
-                gameState.password = pass;
-                
-                // 如果是登入，就把雲端的遊戲進度蓋回本地
+                alert("總部對接成功！");
+                gameState.username = user; gameState.password = pass;
                 if (mode === "login" && res.gameData) {
-                    try {
-                        gameState = JSON.parse(res.gameData);
-                    } catch(e) {
-                        console.error("雲端存檔解析錯誤", e);
-                    }
+                    try { gameState = JSON.parse(res.gameData); } catch(e){}
                 }
-                
-                // 更新登入狀態 UI
                 document.getElementById("btn-account-text").innerText = "身分：" + user;
                 document.getElementById("lbl-status-user").innerText = user;
                 document.getElementById("logged-status-lbl").style.display = "block";
                 document.getElementById("modal-logout-zone").style.display = "block";
-                
-                toggleAccountModal(false);
-                updatePixelGraphics();
-                updateUI();
-                showLog(`歡迎回來！大亨【${user}】正在聽候差遣`);
-            } else {
-                alert("總部回報錯誤: " + (res.message || "未知原因失敗"));
-                showLog("認證失敗，請檢查帳密設定。");
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("連線到總部伺服器失敗！請確認是否使用 Live Server 網頁伺服器開啟。");
-            showLog("雲端連線失敗。");
-        });
+                toggleAccountModal(false); updatePixelGraphics(); updateUI();
+            } else { alert("對接失敗: " + res.message); }
+        }).catch(() => alert("連線失敗，請檢查 GAS 網址與設定。"));
     }
 
-    // 補齊對應的登出功能，方便切換帳號
-    function logout() {
-        gameState.username = "";
-        gameState.password = "";
-        document.getElementById("btn-account-text").innerText = "管理我的飲料帝國帳號";
-        document.getElementById("lbl-status-user").innerText = "遊客";
-        document.getElementById("logged-status-lbl").style.display = "none";
-        document.getElementById("modal-logout-zone").style.display = "none";
-        document.getElementById("auth-user").value = "";
-        document.getElementById("auth-pass").value = "";
-        alert("已成功登出店長身分！");
-        toggleAccountModal(false);
-        showLog("目前身分為匿名遊客");
+    function triggerManualSave() {
+        if(!gameState.username) { alert("遊客身分無法同步雲端，請先註冊/登入店長帳號！"); return; }
+        showLog("同步資料中...");
+        fetch(GAS_API_URL, {
+            method: "POST",
+            mode: "cors",
+            body: JSON.stringify({ action: "save", username: gameState.username, password: gameState.password, data: JSON.stringify(gameState) })
+        })
+        .then(res => res.json())
+        .then(res => { if(res.status === "success") { alert("💾 進度已完美保存至雲端試算表！"); } });
     }
+
+    function resetLocalData() {
+        if(confirm("確定要充公所有黑心資產、重置遊戲嗎？")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    function logout() {
+        location.reload();
+    }
+
+    // 初始化啟動
+    updatePixelGraphics();
+    updateUI();
+    switchTab('upgrade');
 </script>
 </body>
 </html>
