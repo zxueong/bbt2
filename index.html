@@ -195,8 +195,8 @@
 </div>
 
 <script>
-    // ⚠️ 請在此處置換您的 Google Apps Script 後端 URL（尾端要是 /exec）
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx9Nu7NNfEIPuPvGuDhzJwkOmrMLJpvuvijaMsYlHu5DLAJRYseGcJCQeBrNPptz1990g/exec";
+    // ⚠️ 請在下方雙引號內貼上您的 Google Apps Script 後端 URL（尾端必須是 /exec）
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzI5s-QNaOaLVem3L_lcBfooRuZSueMdVttXQ9XWLSDVYDnmpe9Io1QTZzXp8spvgGfQw/exec";
 
     let gameState = {
         money: 0, totalEarned: 0, 
@@ -364,9 +364,9 @@
         if(!confirm(`確定要花費 10% 財產 ($${formatMoney(cost)}) 買通記者去弄【${targetUser}】嗎？`)) return;
         gameState.money -= cost; showLog(`⏳ 正在秘密塞紅包給媒體記者爆料...`);
         try {
-            const response = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify({ action: "attack", username: gameState.username, password: gameState.password, target: targetUser }) });
-            const res = await response.json(); alert(res.msg);
-            if(res.success) { showLog(`🔫 爆料成功！【${targetUser}】慘遭蒼蠅風暴圍剿！`); }
+            // 使用 text 模式傳輸，防止被 Google 跨域機制封鎖
+            const response = await fetch(GAS_API_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "attack", username: gameState.username, password: gameState.password, target: targetUser }) });
+            alert("🚀 請求已發出！15秒內將會同步戰報。");
         } catch(e) { showLog("❌ 商戰連線失敗。"); }
         updateUI();
     }
@@ -477,7 +477,7 @@
             if(!gameState.username) {
                 html += `<div style="padding:20px; text-align:center; color:#8c7664; font-size:12px;">⚠️ 請先點擊上方按鈕建立/登入帳號，才能加入全服互婊排行榜！</div>`;
             } else {
-                html += `<table class="rank-table"><thead><tr><th>排名</th><th>店長帳號</th><th>生平累積財富</th><th>商業制裁</th></tr></thead><tbody>`;
+                html += `<table class="rank-table"><thead><tr><th>排名</th><th>店長帳號</th><th>生平累積財富</th><th>商業制慢</th></tr></thead><tbody>`;
                 globalLeaderboard.sort((a,b) => b.money - a.money);
                 globalLeaderboard.forEach((p, idx) => {
                     let isMe = p.username === gameState.username;
@@ -536,12 +536,20 @@
         showLog("🔄 東山再起！進度已完全清空歸零！"); updatePixelGraphics(); renderTabContent();
     }
 
+    // ⚡ 核心連線邏輯大改造
     async function handleAuth(action) {
         const u = document.getElementById('auth-user').value.trim(); const p = document.getElementById('auth-pass').value.trim();
-        if(!u || !p) { alert("請填寫完畢帳密！"); return; } showLog("⏳ 正在與 Google 中央雲端資料庫連線中...");
+        if(!u || !p) { alert("請填寫完畢帳密！"); return; } showLog("⏳ 正在與 Google 中央雲端資料庫對接連線...");
         try {
-            const response = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify({ action: action, username: u, password: p }) });
-            const result = await response.json(); alert(result.msg);
+            // 使用 text/plain 來完美跳過複雜的 CORS 預檢，確保網頁能「看見」後端
+            const response = await fetch(GAS_API_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain" }, 
+                body: JSON.stringify({ action: action, username: u, password: p }) 
+            });
+            const result = await response.json(); 
+            alert(result.msg);
+            
             if (result.success && action === "login") {
                 gameState.username = u; gameState.password = p;
                 if (result.saveData && result.saveData.unlockedCities) {
@@ -551,7 +559,9 @@
                 syncAccountUI(true); toggleAccountModal(false); showLog("🎉 雲端儲存進度同步成功！歡迎重回商戰。"); fetchLeaderboard();
             }
             renderTabContent();
-        } catch (err) { showLog("❌ 連線失敗，請確認你的 GAS 部署 URL。"); }
+        } catch (err) { 
+            showLog("❌ 連線失敗！通常是試算表尚未初始化或 GAS 網址填錯。"); 
+        }
     }
 
     async function cloudSave(isManual=false) {
@@ -559,7 +569,11 @@
         if(isManual) showLog("⏳ 正在同步進度至雲端資料庫...");
         try { 
             if(gameState.totalEarned === undefined) gameState.totalEarned = gameState.money;
-            const response = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify({ action: "save", username: gameState.username, password: gameState.password, saveData: gameState }) }); 
+            const response = await fetch(GAS_API_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain" }, 
+                body: JSON.stringify({ action: "save", username: gameState.username, password: gameState.password, saveData: gameState }) 
+            }); 
             const result = await response.json();
             if(result.underAttack !== undefined) {
                 let prev = gameState.underAttack; gameState.underAttack = result.underAttack;
@@ -573,7 +587,11 @@
     async function fetchLeaderboard() {
         if(!gameState.username) return;
         try {
-            const response = await fetch(GAS_API_URL, { method: "POST", body: JSON.stringify({ action: "getLeaderboard", username: gameState.username, password: gameState.password }) });
+            const response = await fetch(GAS_API_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain" }, 
+                body: JSON.stringify({ action: "getLeaderboard", username: gameState.username, password: gameState.password }) 
+            });
             const result = await response.json();
             if(result.leaderboard) { globalLeaderboard = result.leaderboard; if(currentTab === "rank") renderTabContent(); }
         } catch(e){}
