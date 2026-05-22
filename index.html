@@ -247,21 +247,28 @@
 </div>
 
 <div class="universal-overlay" id="account-overlay-box">
-    <div class="modal-input-group">
-    <label for="auth-user">店長註冊帳號</label>
-    <input type="text" id="auth-user" placeholder="輸入英數帳號">
-</div>
-<div class="modal-input-group">
-    <label for="auth-pass">資料防盜密碼</label>
-    <input type="password" id="auth-pass" placeholder="輸入登入密碼">
-</div>
+    <div class="popup-modal">
+        <h3>👤 總部帳號對接管理系統</h3>
+        
+        <div class="modal-input-group">
+            <label for="auth-user">店長註冊帳號</label>
+            <input type="text" id="auth-user" placeholder="輸入英數帳號">
+        </div>
+        
+        <div class="modal-input-group">
+            <label for="auth-pass">資料防盜密碼</label>
+            <input type="password" id="auth-pass" placeholder="輸入登入密碼">
+        </div>
+        
         <div class="modal-btn-row">
             <button class="modal-prime-btn" onclick="handleAuth('login')">安全登入</button>
-            <button class="modal-sec-btn" onclick="handleAuth('register')" style="background:#6c757d;">建立新帳號</button>
+            <button class="modal-sec-btn" onclick="handleAuth('register')">建立新帳號</button>
         </div>
-        <div id="modal-logout-zone" style="display:none; text-align:center; margin-top:15px; border-top:1px solid #eedec9; padding-top:10px;">
+        
+        <div id="modal-logout-zone" style="display:none; width:100%;">
             <button class="modal-prime-btn" onclick="logout()" style="background:#e63946; width:100%;">🚪 登出目前店長身分</button>
         </div>
+        
         <button class="modal-close-btn" onclick="toggleAccountModal(false)">關閉視窗</button>
     </div>
 </div>
